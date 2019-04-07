@@ -25,7 +25,7 @@ if not "%~1" == "" goto debugFile
 
 @echo on 
 
-"D:\Program Files (x86)\IAR Systems\Embedded Workbench 8.2\common\bin\cspybat" -f "G:\test\底板控制20190401\EWARM\settings\YS-F4Pro.YS-F4Pro.general.xcl" --backend -f "G:\test\底板控制20190401\EWARM\settings\YS-F4Pro.YS-F4Pro.driver.xcl" 
+"D:\Program Files (x86)\IAR Systems\Embedded Workbench 8.2\common\bin\cspybat" -f "G:\test\robotpatrol\底板控制20190401\EWARM\settings\YS-F4Pro.YS-F4Pro.general.xcl" --backend -f "G:\test\robotpatrol\底板控制20190401\EWARM\settings\YS-F4Pro.YS-F4Pro.driver.xcl" 
 
 @echo off 
 goto end 
@@ -34,7 +34,7 @@ goto end
 
 @echo on 
 
-"D:\Program Files (x86)\IAR Systems\Embedded Workbench 8.2\common\bin\cspybat" -f "G:\test\底板控制20190401\EWARM\settings\YS-F4Pro.YS-F4Pro.general.xcl" "--debug_file=%~1" --backend -f "G:\test\底板控制20190401\EWARM\settings\YS-F4Pro.YS-F4Pro.driver.xcl" 
+"D:\Program Files (x86)\IAR Systems\Embedded Workbench 8.2\common\bin\cspybat" -f "G:\test\robotpatrol\底板控制20190401\EWARM\settings\YS-F4Pro.YS-F4Pro.general.xcl" "--debug_file=%~1" --backend -f "G:\test\robotpatrol\底板控制20190401\EWARM\settings\YS-F4Pro.YS-F4Pro.driver.xcl" 
 
 @echo off 
 :end

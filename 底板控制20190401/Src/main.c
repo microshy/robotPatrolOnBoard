@@ -173,6 +173,9 @@ int main(void)
   //* 查看相关网络接口配置
   User_notification(&gnetif);
   
+  printf("进行创建UDPserver\n");
+  udp_echoclient_connect();
+  
   HAL_ETH_GetReceivedFrame_IT(&EthHandle); 
   
   MX_CAN_Init();
@@ -738,7 +741,7 @@ void HAL_ETH_RxCpltCallback(ETH_HandleTypeDef *heth)
 {
   ethernetif_input(&gnetif);
   //HAL_ETH_GetReceivedFrame_IT(&EthHandle);
-  printf("1\n");
+  //printf("1\n");
 }
 /**************************************************************************/
 void BASIC_TIM2_Init(void)
