@@ -188,7 +188,10 @@ int main(void)
   BASIC_TIM3_Init();
   HAL_TIM_Base_Start_IT(&TimHandle);
   
-  
+  /*测试周期*/
+  float total_time = 0;
+  int period = 0;
+  //unsigned long diff = 0;
   /*190401test
   CAN_SendTxMsg(0x608, positionCheck);
   HAL_Delay(1);
@@ -238,7 +241,8 @@ int main(void)
   //* 无限循环
 
   while (1)
-  {     
+  {  
+    
     HAL_CAN_Receive_IT(&hCAN, CAN_FIFO0); 
     /*  */  
     // 接收数据并发送至LwIP 
@@ -264,7 +268,15 @@ int main(void)
       send_state_check();
     if((can_Cmd_Q_Ctr <= can_Cmd_Q_Max_Size) && (can_Cmd_Q_Ctr > 0))
       can_Cmd_Q_Send();
-
+    
+    total_time = HAL_GetTick();
+    period += 1;
+    if(period==10000)
+    {
+      printf("periodic %f\n", total_time);
+      period = 0;
+    }
+    
   }
 }
 /****************************************************************
