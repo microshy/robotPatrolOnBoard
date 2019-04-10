@@ -1232,6 +1232,9 @@
             <name>$PROJ_DIR$\..\Src\bsp\GeneralTIM\bsp_GeneralTIM.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\Src\bsp\io\bsp_io.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\Src\bsp\key\bsp_key.c</name>
         </file>
         <file>

@@ -22,6 +22,7 @@
 #include "key/bsp_key.h"
 #include "CAN/bsp_CAN.h"
 #include "GeneralTIM/bsp_GeneralTIM.h"
+#include "io/bsp_io.h"
     
 #include "lwip/opt.h"
 #include "lwip/init.h"
@@ -67,6 +68,7 @@ __IO uint16_t Rx_MSG = MSG_IDLE;   // 接收报文状态
 uint16_t modbus_crc_check,crc_check;
 unsigned char posSetTest[8] = {0x23, 0x7A, 0x60, 0x00, 0xFF, 0xFF, 0x0F, 0x00};
 unsigned char posSpeed[8] = {0x2B, 0x7F, 0x6, 0x00, 0xE8, 0x03, 0x00, 0x00};
+int laser_front, ultra_front, zone1_obst, zone2_obst, zone3_obst;
 /* 私有变量 ------------------------------------------------------------------*/
 struct netif gnetif;
 extern ETH_HandleTypeDef EthHandle;
@@ -152,6 +154,8 @@ int main(void)
   HAL_Init();
   //* 配置系统时钟 
   SystemClock_Config();
+  //初始化IO
+  HAL_IO_Init();
   //* 初始化串口并配置串口中断优先级
   MX_DEBUG_USART_Init();
   
@@ -239,12 +243,12 @@ int main(void)
     HAL_Delay(5);
     CAN_SendTxMsg(0x608, positionCheck);*/
   //* 无限循环
-
-  while (1)
+  HAL_GPIO_WritePin(GPIOF,  GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_SET);
+   while (1)
   {  
     
     HAL_CAN_Receive_IT(&hCAN, CAN_FIFO0); 
-    /*  */  
+      
     // 接收数据并发送至LwIP 
     //ethernetif_input(&gnetif);
     // 超时处理
@@ -267,15 +271,15 @@ int main(void)
     if (state_check_flag)
       send_state_check();
     if((can_Cmd_Q_Ctr <= can_Cmd_Q_Max_Size) && (can_Cmd_Q_Ctr > 0))
-      can_Cmd_Q_Send();
+      can_Cmd_Q_Send(); 
     
-    total_time = HAL_GetTick();
+    /*total_time = HAL_GetTick();
     period += 1;
     if(period==10000)
     {
       printf("periodic %f\n", total_time);
       period = 0;
-    }
+    }*/
     
   }
 }
@@ -808,6 +812,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
       modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
     }
+    if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+    { 
+      modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_VOLTAGE;
+      modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
+      modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+    }
+    if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+    { 
+      modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_CURRENT;
+      modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
+      modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+    }
   }
   else if (htim == (&TimHandle2))//2s
   {
@@ -830,18 +846,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
         modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
       }
-      if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
-      { 
-        modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_VOLTAGE;
-        modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
-        modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
-      }
-      if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
-      { 
-      modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_CURRENT;
-      modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
-      modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
-      }
+      
       battery_periodic=0;
     }
     else
@@ -1233,7 +1238,7 @@ void modbus_Data_Process(void)
   modbus_crc_check=(crc_check>>8)|(crc_check<<8);
   if(modbus_crc_check==(Rx_Buf[RxCount-2]<<8|Rx_Buf[RxCount-1]))
   {
-    if(Rx_Buf[0]==0x01)
+    if(Rx_Buf[0]==0x01)//电池设备
     {
       if(Rx_Buf[1]==0x03)
       {   
@@ -1272,11 +1277,73 @@ void modbus_Data_Process(void)
       else
         printf("operate error\n");
     }
+    else if(Rx_Buf[0]==0x02)//超声波模块
+    {
+      if(Rx_Buf[1]==0x03)
+      {
+        if(Rx_Buf[2]==RxCount-5)
+        {
+          ;
+        }
+        else
+          printf("length error\n");
+      }
+      else
+        printf("operate error\n");
+    }
+    else if(Rx_Buf[0]==0x03)//温湿度传感器
+    {
+      if(Rx_Buf[1]==0x03)
+      {
+        if(Rx_Buf[2]==RxCount-5)
+        {
+          ;
+        }
+        else
+          printf("length error\n");
+      }
+      else
+        printf("operate error\n");
+    }
     else
       printf("peri error\n");
   }
   else
     printf("crc error\n");
   Rx_MSG=MSG_IDLE;
+}
+/**********************************外部中断**********************************/
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
+{
+  if (GPIO_PIN==GPIO_PIN_0)//前激光防跌落
+  {
+    if(laser_front) laser_front = 0;
+    else laser_front = 1;
+    __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_0);
+  }
+  else if (GPIO_PIN==GPIO_PIN_1)//前超声波防跌落
+  {
+    if(ultra_front) ultra_front = 0;
+    else ultra_front = 1;
+    __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_1);
+  }
+  else if (GPIO_PIN==GPIO_PIN_2)//1区障碍物
+  {
+    if(zone1_obst) zone1_obst = 0;
+    else zone1_obst = 1;
+    __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_2);
+  }
+  else if (GPIO_PIN==GPIO_PIN_3)//2区障碍物
+  {
+    if(zone2_obst) zone2_obst = 0;
+    else zone2_obst = 1;
+    __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_3);
+  }
+  else if (GPIO_PIN==GPIO_PIN_4)//3区障碍物
+  {
+    if(zone3_obst) zone3_obst = 0;
+    else zone3_obst = 1;
+    __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_4);
+  }
 }
 /******************* (C) COPYRIGHT 2015-2020 硬石嵌入式开发团队 *****END OF FILE****/
