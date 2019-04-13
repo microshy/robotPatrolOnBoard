@@ -68,6 +68,7 @@ __IO uint16_t Rx_MSG = MSG_IDLE;   // 接收报文状态
 uint16_t modbus_crc_check,crc_check;
 unsigned char posSetTest[8] = {0x23, 0x7A, 0x60, 0x00, 0xFF, 0xFF, 0x0F, 0x00};
 unsigned char posSpeed[8] = {0x2B, 0x7F, 0x6, 0x00, 0xE8, 0x03, 0x00, 0x00};
+
 int laser_front, ultra_front, zone1_obst, zone2_obst, zone3_obst;
 /* 私有变量 ------------------------------------------------------------------*/
 struct netif gnetif;
@@ -80,6 +81,13 @@ KEY key1,key2,key3,key4,key5;
 int total_cnt=0;
 int state_check_flag = 0;
 int battery_periodic = 0;
+/*疲劳测试*/
+int test_move_cmd_periodic = 0;
+int flagm = 0;
+int flagr = 0;
+unsigned char setSpeedTest[8] = {0x2B, 0xFF, 0x60, 0x00, 0xFF, 0x00, 0x00, 0x00};
+unsigned char setSpeedTest2[8] = {0x2B, 0xFF, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00};
+//unsigned char posSetTest[8] = {0x23, 0x7A, 0x60, 0x00, 0xFF, 0x1F, 0x00, 0x00};
 /* 扩展变量 ------------------------------------------------------------------*/
 extern __IO uint8_t DHCP_flag;
 
@@ -243,12 +251,69 @@ int main(void)
     HAL_Delay(5);
     CAN_SendTxMsg(0x608, positionCheck);*/
   //* 无限循环
-  HAL_GPIO_WritePin(GPIOF,  GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_SET);
+  //HAL_GPIO_WritePin(GPIOF,  GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_SET);
    while (1)
   {  
     
     HAL_CAN_Receive_IT(&hCAN, CAN_FIFO0); 
-      
+    if (flagm)
+    {
+      CAN_SendTxMsg(0x601, setSpeedTest);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x602, setSpeedTest);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x603, setSpeedTest);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x604, setSpeedTest);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x605, posSetTest);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x605, posStart);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x606, posSetTest);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x606, posStart);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x607, posSetTest);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x607, posStart);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x608, posSetTest);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x608, posStart);
+      HAL_Delay(1);
+      flagm = 0;
+      printf("periodic move\n");
+    }
+    else if (flagr)
+    {
+       CAN_SendTxMsg(0x601, setSpeedTest2);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x602, setSpeedTest2);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x603, setSpeedTest2);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x604, setSpeedTest2);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x605, posSet);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x605, posStart);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x606, posSet);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x606, posStart);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x607, posSet);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x607, posStart);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x608, posSet);
+      HAL_Delay(1);
+      CAN_SendTxMsg(0x608, posStart);
+      HAL_Delay(1);
+      flagr = 0;
+      printf("periodic spin\n");
+    }
     // 接收数据并发送至LwIP 
     //ethernetif_input(&gnetif);
     // 超时处理
@@ -849,8 +914,25 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       
       battery_periodic=0;
     }
-    else
+    else 
       battery_periodic += 1;
+    /*疲劳测试*/
+    printf("test_move_cmd_periodic = %d", test_move_cmd_periodic);
+    if(test_move_cmd_periodic==0)
+    {
+      flagm = 1;
+      test_move_cmd_periodic+=1;
+    }
+    else if(test_move_cmd_periodic==60)
+    {
+      flagr = 1;
+      test_move_cmd_periodic+=1;
+    }
+    else if(test_move_cmd_periodic==75)
+      test_move_cmd_periodic=0;
+    else
+      test_move_cmd_periodic+=1;
+    printf("%d", test_move_cmd_periodic);
   }
   else if(htim==&htimx)//modbus用
   {
