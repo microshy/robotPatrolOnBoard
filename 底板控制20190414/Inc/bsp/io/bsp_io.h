@@ -1,0 +1,3 @@
+#define ETH_GPIO_CLK_ENABLE() {__HAL_RCC_GPIOG_CLK_ENABLE();__HAL_RCC_GPIOF_CLK_ENABLE();}
+
+void HAL_IO_Init(void);
