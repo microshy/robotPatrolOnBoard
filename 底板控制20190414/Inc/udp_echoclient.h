@@ -36,6 +36,8 @@
 #define BAT_READ_POWER          0x23
 #define BAT_READ_VOLTAGE        0x24
 #define BAT_READ_CURRENT        0x25
+#define TEMPER_READ             0x31
+#define WET_READ                0x32
 /* 宏定义 --------------------------------------------------------------------*/
 /* 扩展变量 ------------------------------------------------------------------*/
 //control instruction

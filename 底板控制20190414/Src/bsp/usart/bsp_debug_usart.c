@@ -141,21 +141,23 @@ void MX_DEBUG_USART_Init(void)
   printf("1\n");
   husart_debug_485.Instance = USART3;
   husart_debug_485.Init.BaudRate = DEBUG_USART3_BAUDRATE;
-  husart_debug_485.Init.WordLength = UART_WORDLENGTH_9B;
+  //husart_debug_485.Init.WordLength = UART_WORDLENGTH_9B;
+  husart_debug_485.Init.WordLength = UART_WORDLENGTH_8B;
   husart_debug_485.Init.StopBits = UART_STOPBITS_1;
-  husart_debug_485.Init.Parity = UART_PARITY_EVEN;
+  //husart_debug_485.Init.Parity = UART_PARITY_EVEN;
+  husart_debug_485.Init.Parity = UART_PARITY_NONE;
   husart_debug_485.Init.Mode = UART_MODE_TX_RX;
   husart_debug_485.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   husart_debug_485.Init.OverSampling = UART_OVERSAMPLING_16;
-  printf("1.1\n");
+  //printf("1.1\n");
   HAL_UART_Init(&husart_debug_485);
-  printf("2\n");
+  //printf("2\n");
   HAL_NVIC_SetPriority(USART3_IRQn,0,0);
   HAL_NVIC_EnableIRQ(USART3_IRQn);
-  printf("3\n");
+  //printf("3\n");
   //开启中断,存储在临时缓存中
   HAL_UART_Receive_IT(&husart_debug_485,(uint8_t*)&tmp_Rx_Buf,1);
-  printf("4\n");
+  //printf("4\n");
 }
 /**
   * 函数功能: 串口发送函数

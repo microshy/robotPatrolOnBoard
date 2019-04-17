@@ -31,9 +31,9 @@
 /* RTU通信需要确定超时时间 */
 #if DEBUG_USART3_BAUDRATE <= 19200
   /* 1.5个字符的超时时间 T = BAUDRATE/11/1000*/
-  #define OVERTIME_15CHAR             1562//((float)(30/(DEBUG_USART3_BAUDRATE*2))*1000000)//(((float)DEBUG_USART3_BAUDRATE/11)*1.5f)
+  #define OVERTIME_15CHAR             1800//1562//((float)(30/(DEBUG_USART3_BAUDRATE*2))*1000000)//(((float)DEBUG_USART3_BAUDRATE/11)*1.5f)
   /* 3个字符的超时时间 */
-  #define OVERTIME_35CHAR             3654//((float)(70/(DEBUG_USART3_BAUDRATE*2))*1000000)//(((float)DEBUG_USART3_BAUDRATE/11)*3.5f)
+  #define OVERTIME_35CHAR             4200//3654//((float)(70/(DEBUG_USART3_BAUDRATE*2))*1000000)//(((float)DEBUG_USART3_BAUDRATE/11)*3.5f)
 #else 
   /* 波特率超过19200bit/s的情况下建议的超时时间 */
   #define OVERTIME_15CHAR                750.0f    // 750us 

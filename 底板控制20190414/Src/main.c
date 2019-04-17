@@ -81,6 +81,9 @@ KEY key1,key2,key3,key4,key5;
 int total_cnt=0;
 int state_check_flag = 0;
 int battery_periodic = 0;
+int temper_wet_periodic = 0;
+int wait_rx = 0;
+int check_periodic = 0;
 /*疲劳测试*/
 int test_move_cmd_periodic = 0;
 int flagm = 0;
@@ -251,13 +254,19 @@ int main(void)
     HAL_Delay(5);
     CAN_SendTxMsg(0x608, positionCheck);*/
   //* 无限循环
-  HAL_GPIO_WritePin(GPIOF,  GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
-   while (1)
+  HAL_GPIO_WritePin(GPIOF,  GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_SET);//开启继电器
+  //printf("%x\n",HAL_GPIO_ReadPin(GPIOG, GPIO_PIN_0));
+  /*MB_ReadHoldingReg_03H(0x01, 0x03, 0x0001, 0x0001);
+  HAL_Delay(200);
+  MB_ReadHoldingReg_03H(0x03, 0x04, 0x0001, 0x0001);
+  HAL_Delay(200);
+  MB_ReadHoldingReg_03H(0x03, 0x04, 0x0001, 0x0001);
+  HAL_Delay(200);
+  MB_ReadHoldingReg_03H(0x03, 0x04, 0x0001, 0x0001);*/
+  while (1)
   {  
-    HAL_Delay(1000);
-    printf("%x\n",HAL_GPIO_ReadPin(GPIOF, GPIO_PIN_12));
-    HAL_GPIO_TogglePin(GPIOF, GPIO_PIN_12);
     HAL_CAN_Receive_IT(&hCAN, CAN_FIFO0); 
+    HAL_UART_Receive_IT(&husart_debug_485,(uint8_t*)&tmp_Rx_Buf,1);
     /*
     //疲劳测试
     if (flagm)
@@ -322,7 +331,7 @@ int main(void)
     // 接收数据并发送至LwIP 
     //ethernetif_input(&gnetif);
     // 超时处理
-    /*sys_check_timeouts();
+    sys_check_timeouts();
     //找原点
     if(btorigin)
       turn_back_to_origin();
@@ -343,7 +352,7 @@ int main(void)
     if((can_Cmd_Q_Ctr <= can_Cmd_Q_Max_Size) && (can_Cmd_Q_Ctr > 0))
       can_Cmd_Q_Send(); 
     
-    total_time = HAL_GetTick();
+    /*total_time = HAL_GetTick();
     period += 1;
     if(period==10000)
     {
@@ -838,7 +847,7 @@ void BASIC_TIM2_Init(void)
   TIM_MasterConfigTypeDef sMasterConfig;
   TimHandle2.Instance=TIM2;//定时器基本配置
   TimHandle2.Init.Period = 50000-1;
-  TimHandle2.Init.Prescaler = 3359;
+  TimHandle2.Init.Prescaler = 1679;
   TimHandle2.Init.ClockDivision = 0;
   TimHandle2.Init.CounterMode = TIM_COUNTERMODE_UP;
   HAL_TIM_Base_Init(&TimHandle2);
@@ -856,8 +865,8 @@ void BASIC_TIM3_Init(void)
   
   TIM_MasterConfigTypeDef sMasterConfig;
   TimHandle.Instance=TIM3;//定时器基本配置
-  TimHandle.Init.Period = 50000-1;
-  TimHandle.Init.Prescaler = 1679;
+  TimHandle.Init.Period = 10000;
+  TimHandle.Init.Prescaler = 83;
   TimHandle.Init.ClockDivision = 0;
   TimHandle.Init.CounterMode = TIM_COUNTERMODE_UP;
   HAL_TIM_Base_Init(&TimHandle);
@@ -872,38 +881,27 @@ void BASIC_TIM3_Init(void)
 }
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  if (htim == (&TimHandle))//1s
+  if (htim == (&TimHandle))//10ms
   {
      //LWIP_Process();
     //printf("%x\n",Rx_MSG);
-    state_check_flag = 1;
-    if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
-    { 
-      modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_ALARM;
-      modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
-      modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+   
+    /*if(wait_rx == 1 && Rx_MSG == MSG_RX)
+    {
+      Rx_MSG = MSG_INC;
+      HAL_UART_Receive_IT(&husart_debug_485,(uint8_t*)&tmp_Rx_Buf,1);
+      wait_rx = 0;
     }
-    if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
-    { 
-      modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_VOLTAGE;
-      modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
-      modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
-    }
-    if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
-    { 
-      modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_CURRENT;
-      modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
-      modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
-    }
+    else if(Rx_MSG == MSG_RX)
+    {
+      wait_rx += 1;
+    }*/
+    
   }
-  else if (htim == (&TimHandle2))//2s
-  {
-    #ifdef USE_DHCP
-    //printf("periodic tconnect\n");
-    /* LwIP需要定时处理的函数 */
-    DHCP_Periodic_Handle(&gnetif); 
-    #endif
-    if(battery_periodic==9)
+  else if (htim == (&TimHandle2))//1s
+  { 
+    //printf("modbus_Cmd_Q_Ctr            %d\n",modbus_Cmd_Q_Ctr);
+    if(check_periodic==14 || check_periodic==44)//dianchi wendu & dianliang
     {
       if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
       { 
@@ -917,11 +915,65 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
         modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
       }
-      
-      battery_periodic=0;
+      check_periodic += 1;
     }
-    else 
-      battery_periodic += 1;
+    else if(check_periodic==29 || check_periodic==58)//wendu
+    {
+      /*if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+      { 
+        modbus_Cmd_Q[modbus_Cmd_Q_Push] = TEMPER_READ;
+        modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
+        modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+      }*/
+      if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+      { 
+        modbus_Cmd_Q[modbus_Cmd_Q_Push] = TEMPER_READ;
+        modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
+        modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+      }
+      check_periodic += 1;
+    }
+    else if(check_periodic==21 || check_periodic==51)//shidu
+    {
+      /*if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+      { 
+        modbus_Cmd_Q[modbus_Cmd_Q_Push] = WET_READ;
+        modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
+        modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+      }*/
+       if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+      { 
+        modbus_Cmd_Q[modbus_Cmd_Q_Push] = WET_READ;
+        modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
+        modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+      }
+      check_periodic += 1;
+    }
+    else if(check_periodic==59)//qingling
+      check_periodic = 0;
+    else//changgui
+    {
+      state_check_flag = 1;
+      if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+      { 
+        modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_ALARM;
+        modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
+        modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+      }
+      if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+      { 
+        modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_VOLTAGE;
+        modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
+        modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+      }
+      if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+      { 
+        modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_CURRENT;
+        modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
+        modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+      }
+      check_periodic += 1;
+    }
     /*疲劳测试
     printf("test_move_cmd_periodic = %d", test_move_cmd_periodic);
     if(test_move_cmd_periodic==0)
@@ -971,7 +1023,8 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
     
     //* 如果是第二次进入比较中断,则认定为报文不完整
     else
-      Rx_MSG = MSG_INC;
+    {Rx_MSG = MSG_INC;
+    printf("timeout000\n");}
   }
   //printf("1000\n");
 }
@@ -1221,17 +1274,17 @@ void turn_back_to_origin(void)
   */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+  //printf("\n");
   if(huart == &husart_debug_485)
   {
     switch(Rx_MSG)
     {
       /* 接收到第一个字符之后开始计时1.5/3.5个字符的时间 */
-      case MSG_RX:
-      //case MSG_IDLE:
+      //case MSG_RX:
+      case MSG_IDLE:
         Rx_MSG = MSG_RXING;
         RxCount = 0;
-        int ret;
-        ret = HAL_TIM_Base_Start(&htimx);
+        HAL_TIM_Base_Start(&htimx);
         break;
       
       /* 距离上一次接收到数据已经超过1.5个字符的时间间隔,认定为数据帧不完整 */
@@ -1239,7 +1292,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         Rx_MSG = MSG_INC; // 数据帧不完整
       break;
     }
-    
+    //printf("%x\n", tmp_Rx_Buf);
     /* 使能继续接收 */
     Rx_Buf[RxCount] = tmp_Rx_Buf;
     RxCount++;
@@ -1258,34 +1311,38 @@ void modbus_Cmd_Q_Send(void)
   switch(cmd_index)
   {
   case BAT_READ_ALARM:
-    MB_ReadHoldingReg_03H(0x01, 0x0043, 0x0001);
-    //printf("send modbus read cmd\n");
-    //HAL_Delay(100);
-    //printf("time out\n");
+    MB_ReadHoldingReg_03H(0x01, 0x03, 0x0043, 0x0001);
+    HAL_Delay(1);
     break;
   case BAT_READ_TEMPER:
-    MB_ReadHoldingReg_03H(0x01, 0x0010, 0x0001);
-    //printf("send modbus read cmd\n");
-    //HAL_Delay(100);
-    //printf("time out\n");
+    MB_ReadHoldingReg_03H(0x01, 0x03, 0x0010, 0x0001);
+    HAL_Delay(1);
     break;
   case BAT_READ_POWER:
-    MB_ReadHoldingReg_03H(0x01, 0x0014, 0x0001);
-    //printf("send modbus read cmd\n");
-    //HAL_Delay(100);
-    //printf("time out\n");
+    MB_ReadHoldingReg_03H(0x01, 0x03, 0x0014, 0x0001);
+    HAL_Delay(1);
     break;
   case BAT_READ_VOLTAGE:
-    MB_ReadHoldingReg_03H(0x01, 0x000E, 0x0001);
-    //printf("send modbus read cmd\n");
-    //HAL_Delay(100);
-    //printf("time out\n");
+    MB_ReadHoldingReg_03H(0x01, 0x03, 0x000E, 0x0001);
+    HAL_Delay(1);
     break;
   case BAT_READ_CURRENT:
-    MB_ReadHoldingReg_03H(0x01, 0x000F, 0x0001);
-    //printf("send modbus read cmd\n");
-    //HAL_Delay(100);
-    //printf("time out\n");
+    MB_ReadHoldingReg_03H(0x01, 0x03, 0x000F, 0x0001);
+    HAL_Delay(1);
+    break;
+  case TEMPER_READ:
+    //HAL_Delay(1);
+    MB_ReadHoldingReg_03H(0x03, 0x04, 0x0001, 0x0001);
+    //MB_ReadHoldingReg_03H(0x03, 0x04, 0x0001, 0x0001);
+    HAL_Delay(3);
+    //HAL_Delay(2);
+    break;
+  case WET_READ:
+    //HAL_Delay(1);
+    MB_ReadHoldingReg_03H(0x03, 0x04, 0x0002, 0x0001);
+    HAL_Delay(3);
+    //MB_ReadHoldingReg_03H(0x03, 0x04, 0x0002, 0x0001);
+    //HAL_Delay(2);
     break;
   default:
     break;
@@ -1303,20 +1360,26 @@ void modbus_Periodic_Handler(void)
   }
   if(Rx_MSG==MSG_COM)
   {
-    /*printf("status:complete\n");
+    /*printf("status:complete\n");*/
     for(int i=0;i<RxCount;i++)
     {
       printf("%x ",Rx_Buf[i]);
     }
-    printf("\n");*/
+    printf("\n");
     modbus_Data_Process();
   }
   if(Rx_MSG==MSG_IDLE)
   {
     if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size) && (modbus_Cmd_Q_Ctr > 0))
     {
+      //Rx_MSG=MSG_RX;
       modbus_Cmd_Q_Send();
-      Rx_MSG=MSG_RX;
+      
+      /*if(Rx_MSG==MSG_RX)
+      {
+        Rx_MSG=MSG_IDLE;
+        HAL_UART_Receive_IT(&husart_debug_485,(uint8_t*)&tmp_Rx_Buf,1);
+      }*/
     }
   }
 }

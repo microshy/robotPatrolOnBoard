@@ -178,12 +178,12 @@ void MB_ReadInput_02H(uint8_t _addr, uint16_t _reg, uint16_t _num)
   * 返 回 值: 无
   * 说    明: 填充数据发送缓存区,然后发送
   */
-void MB_ReadHoldingReg_03H(uint8_t _addr, uint16_t _reg, uint16_t _num)
+void MB_ReadHoldingReg_03H(uint8_t _addr, uint8_t _func, uint16_t _reg, uint16_t _num)
 {
 	uint16_t TxCount = 0;
         uint16_t crc = 0;
         Tx_Buf[TxCount++] = _addr;		    /* 从站地址 */
-        Tx_Buf[TxCount++] = 0x03;		      /* 功能码 */	
+        Tx_Buf[TxCount++] = _func;		      /* 功能码 */	
         Tx_Buf[TxCount++] = _reg >> 8;	  /* 寄存器地址 高字节 */
         Tx_Buf[TxCount++] = _reg;		      /* 寄存器地址 低字节 */
         Tx_Buf[TxCount++] = _num >> 8;	  /* 寄存器(16bits)个数 高字节 */
@@ -192,8 +192,19 @@ void MB_ReadHoldingReg_03H(uint8_t _addr, uint16_t _reg, uint16_t _num)
         crc = MB_CRC16((uint8_t*)&Tx_Buf,TxCount);
         Tx_Buf[TxCount++] = crc;	          /* crc 高字节 */
         Tx_Buf[TxCount++] = crc>>8;		      /* crc 低字节 */
-        Tx_Buf[TxCount++] = 0x0D;
-        Tx_Buf[TxCount++] = 0x0A;
+        if (_addr == 0x01)
+        {
+          Tx_Buf[TxCount++] = 0x0D;
+          Tx_Buf[TxCount++] = 0x0A;
+        } 
+        else
+        {
+          /*for(int i=0;i<8;i++)
+          {
+            printf("%x ",Tx_Buf[i]);
+          }
+          printf("\n");*/
+        }
         UART_Tx((uint8_t *)&Tx_Buf,TxCount);
 }
 
