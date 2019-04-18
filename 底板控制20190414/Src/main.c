@@ -266,7 +266,7 @@ int main(void)
   while (1)
   {  
     HAL_CAN_Receive_IT(&hCAN, CAN_FIFO0); 
-    HAL_UART_Receive_IT(&husart_debug_485,(uint8_t*)&tmp_Rx_Buf,1);
+    
     /*
     //∆£¿Õ≤‚ ‘
     if (flagm)
@@ -903,7 +903,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     //printf("modbus_Cmd_Q_Ctr            %d\n",modbus_Cmd_Q_Ctr);
     if(check_periodic==14 || check_periodic==44)//dianchi wendu & dianliang
     {
-      if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+      /*if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
       { 
         modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_TEMPER;
         modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
@@ -914,7 +914,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_POWER;
         modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
         modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
-      }
+      }*/
       check_periodic += 1;
     }
     else if(check_periodic==29 || check_periodic==58)//wendu
@@ -925,12 +925,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
         modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
       }*/
-      if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
-      { 
-        modbus_Cmd_Q[modbus_Cmd_Q_Push] = TEMPER_READ;
-        modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
-        modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
-      }
       check_periodic += 1;
     }
     else if(check_periodic==21 || check_periodic==51)//shidu
@@ -941,12 +935,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
         modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
       }*/
-       if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
-      { 
-        modbus_Cmd_Q[modbus_Cmd_Q_Push] = WET_READ;
-        modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
-        modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
-      }
+      
       check_periodic += 1;
     }
     else if(check_periodic==59)//qingling
@@ -971,6 +960,42 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_CURRENT;
         modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
         modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+      }
+      if(check_periodic%4==0)
+      {
+        if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+        { 
+          modbus_Cmd_Q[modbus_Cmd_Q_Push] = TEMPER_READ;
+          modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
+          modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+        }
+      }
+      else if(check_periodic%4==1)
+      {
+        if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+        { 
+          modbus_Cmd_Q[modbus_Cmd_Q_Push] = WET_READ;
+          modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
+          modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+        }
+      }
+      else if(check_periodic%4==2)
+      {
+        if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+        { 
+          modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_TEMPER;
+          modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
+          modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+        }
+      }
+      else if(check_periodic%4==3)
+      {
+        if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size - 1) && modbus_Cmd_Q_Ctr>=0)
+        { 
+          modbus_Cmd_Q[modbus_Cmd_Q_Push] = BAT_READ_POWER;
+          modbus_Cmd_Q_Push = (modbus_Cmd_Q_Push + 1) % modbus_Cmd_Q_Max_Size;
+          modbus_Cmd_Q_Ctr = modbus_Cmd_Q_Ctr + 1;
+        }
       }
       check_periodic += 1;
     }
@@ -1331,14 +1356,14 @@ void modbus_Cmd_Q_Send(void)
     HAL_Delay(1);
     break;
   case TEMPER_READ:
-    //HAL_Delay(1);
+    HAL_Delay(2);
     MB_ReadHoldingReg_03H(0x03, 0x04, 0x0001, 0x0001);
     //MB_ReadHoldingReg_03H(0x03, 0x04, 0x0001, 0x0001);
     HAL_Delay(3);
     //HAL_Delay(2);
     break;
   case WET_READ:
-    //HAL_Delay(1);
+    HAL_Delay(2);
     MB_ReadHoldingReg_03H(0x03, 0x04, 0x0002, 0x0001);
     HAL_Delay(3);
     //MB_ReadHoldingReg_03H(0x03, 0x04, 0x0002, 0x0001);
@@ -1361,6 +1386,7 @@ void modbus_Periodic_Handler(void)
   if(Rx_MSG==MSG_COM)
   {
     /*printf("status:complete\n");*/
+
     for(int i=0;i<RxCount;i++)
     {
       printf("%x ",Rx_Buf[i]);
@@ -1373,6 +1399,7 @@ void modbus_Periodic_Handler(void)
     if((modbus_Cmd_Q_Ctr <= modbus_Cmd_Q_Max_Size) && (modbus_Cmd_Q_Ctr > 0))
     {
       //Rx_MSG=MSG_RX;
+      HAL_UART_Receive_IT(&husart_debug_485,(uint8_t*)&tmp_Rx_Buf,1);
       modbus_Cmd_Q_Send();
       
       /*if(Rx_MSG==MSG_RX)
